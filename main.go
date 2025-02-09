@@ -5,15 +5,14 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
-	mathrand "math/rand"
 	"os"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_><=+"
 
-var length = flag.Int("length", 25, "Max length of the strings between the characters I want to mix")
+var length = flag.Int("length", 40, "Max length of the strings between the characters I want to mix")
 
-func SecureRandomString(length int) (string, error) {
+func secureRandomString(length int) (string, error) {
 	bytes := make([]byte, length)
 	_, err := rand.Read(bytes) // Read cryptographically secure random bytes
 	if err != nil {
@@ -27,19 +26,58 @@ func SecureRandomString(length int) (string, error) {
 	return string(bytes), nil
 }
 
+func randomNumber(max int) (int, error) {
+	if max < 2 {
+		return 2, nil
+	}
+
+	// Create a single byte buffer
+	b := make([]byte, 1)
+
+	for {
+		// Read a random byte
+		_, err := rand.Read(b)
+		if err != nil {
+			return 0, err
+		}
+
+		// Calculate the number within our range
+		n := int(b[0])%(max-1) + 2
+
+		// If the number is within our desired range, return it
+		if n <= max {
+			return n, nil
+		}
+		// If not, try again
+	}
+}
+
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	var stdinInput string
 	if scanner.Scan() {
 		stdinInput = scanner.Text()
+
+		// Add a random character at the beginning so that the first character is not part of the input
+		randomCharacter, err := secureRandomString(1)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		stdinInput = randomCharacter + stdinInput
 	}
 
 	for _, char := range stdinInput {
 		fmt.Printf("%c", char)
 
-		randomNumber := mathrand.Intn(*length-2) + 2
+		randomInt, err := randomNumber(*length)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
 
-		randomStr, err := SecureRandomString(randomNumber)
+		randomStr, err := secureRandomString(randomInt)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
